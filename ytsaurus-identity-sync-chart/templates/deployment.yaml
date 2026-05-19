@@ -77,6 +77,11 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/ytsaurus-identity-sync
+            {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.customRootCA.enabled }}
+            - name: keycloak-custom-root-ca
+              mountPath: {{ required "keycloak.customRootCA.mountPath is not provided" .Values.keycloak.customRootCA.mountPath | quote }}
+              readOnly: true
+            {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -87,6 +92,14 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
+        {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.customRootCA.enabled }}
+        - name: keycloak-custom-root-ca
+          secret:
+            secretName: {{ required "keycloak.customRootCA.secretName is not provided" .Values.keycloak.customRootCA.secretName | quote }}
+            items:
+              - key: {{ required "keycloak.customRootCA.secretKey is not provided" .Values.keycloak.customRootCA.secretKey | quote }}
+                path: {{ required "keycloak.customRootCA.fileName is not provided" .Values.keycloak.customRootCA.fileName | quote }}
+        {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

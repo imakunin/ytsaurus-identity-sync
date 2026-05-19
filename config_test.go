@@ -125,6 +125,7 @@ func TestKeycloakConfig(t *testing.T) {
 	require.Equal(t, "test", cfg.Keycloak.Realm)
 	require.Equal(t, "test", cfg.Keycloak.ClientID)
 	require.Equal(t, "KEYCLOAK_CLIENT_SECRET", cfg.Keycloak.ClientSecretEnvVar)
+	require.Equal(t, "/etc/ytsaurus-identity-sync/keycloak-ca/ca.crt", cfg.Keycloak.CustomRootCAPath)
 	require.Equal(t, "username:test_ email:@acme.com", cfg.Keycloak.UsersAttributeFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.UsersGroupFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.GroupsFilter)

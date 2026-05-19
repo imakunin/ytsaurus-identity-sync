@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"os"
 	"strings"
 
 	"github.com/Nerzal/gocloak/v14"
@@ -33,6 +36,10 @@ type AttributeFilter struct {
 
 func NewKeycloak(cfg *KeycloakConfig, logger appLoggerType) (*Keycloak, error) {
 	client := gocloak.NewClient(cfg.URL)
+	err := configureKeycloakTLSClient(client, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	usersGroupfilter, err := regexp2.Compile(cfg.UsersGroupFilter, 0)
 	if err != nil {
@@ -50,6 +57,31 @@ func NewKeycloak(cfg *KeycloakConfig, logger appLoggerType) (*Keycloak, error) {
 		groupsFilter:     groupsFilter,
 		logger:           logger,
 	}, nil
+}
+
+func configureKeycloakTLSClient(client *gocloak.GoCloak, cfg *KeycloakConfig) error {
+	if cfg.CustomRootCAPath == "" {
+		return nil
+	}
+
+	customRootCA, err := os.ReadFile(cfg.CustomRootCAPath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read keycloak custom root CA from %s", cfg.CustomRootCAPath)
+	}
+
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		return errors.Wrap(err, "failed to load system certificate pool")
+	}
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+	if ok := rootCAs.AppendCertsFromPEM(customRootCA); !ok {
+		return errors.Errorf("failed to parse keycloak custom root CA from %s", cfg.CustomRootCAPath)
+	}
+
+	client.RestyClient().SetTLSClientConfig(&tls.Config{RootCAs: rootCAs})
+	return nil
 }
 
 func (k *Keycloak) CreateUserFromRaw(raw map[string]any) (SourceUser, error) {

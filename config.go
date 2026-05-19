@@ -104,10 +104,13 @@ type LdapConfig struct {
 }
 
 type KeycloakConfig struct {
-	URL                  string `yaml:"url"`
-	Realm                string `yaml:"realm"`
-	ClientID             string `yaml:"client_id"`
-	ClientSecretEnvVar   string `yaml:"client_secret_env_var"`
+	URL                string `yaml:"url"`
+	Realm              string `yaml:"realm"`
+	ClientID           string `yaml:"client_id"`
+	ClientSecretEnvVar string `yaml:"client_secret_env_var"`
+	// CustomRootCAPath is an optional path to PEM-encoded root CA certificate
+	// used to verify Keycloak TLS certificate chain.
+	CustomRootCAPath     string `yaml:"custom_root_ca_path,omitempty"`
 	UsersAttributeFilter string `yaml:"users_attribute_filter"`
 	UsersGroupFilter     string `yaml:"users_group_filter"`
 	GroupsFilter         string `yaml:"groups_filter"`

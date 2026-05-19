@@ -11,6 +11,14 @@ syncSource: keycloak
 keycloak:
   # development configuration, use externalSecrets or sealedSecrets for production.
   clientSecret: "keycloak-secret-token"
+  customRootCA:
+    enabled: false
+    # Existing k8s Secret with CA cert in key `ca.crt`.
+    # secretName: "keycloak-root-ca"
+    secretName: ""
+    secretKey: "ca.crt"
+    mountPath: "/etc/ytsaurus-identity-sync/keycloak-ca"
+    fileName: "ca.crt"
 
 syncConfig: |-
   app:
@@ -26,6 +34,8 @@ syncConfig: |-
     realm: "test_realm"
     client_id: "test_client"
     client_secret_env_var: "KEYCLOAK_CLIENT_SECRET"
+    # Enable when Keycloak TLS cert is signed by custom CA and Secret mount is configured above.
+    # custom_root_ca_path: "{{ .Values.keycloak.customRootCA.mountPath }}/{{ .Values.keycloak.customRootCA.fileName }}"
     users_attribute_filter: "username:test_ email:@acme.com"
     users_group_filter: "^test_.*"
     groups_filter: "^test_.*"
