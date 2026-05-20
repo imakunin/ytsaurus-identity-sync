@@ -1,3 +1,15 @@
+{{- $syncConfigRendered := tpl (required "syncConfig is not provided" .Values.syncConfig) . -}}
+{{- $syncConfig := fromYaml $syncConfigRendered | default (dict) -}}
+{{- if and (eq .Values.syncSource "ldap") .Values.ldap.customRootCA.enabled -}}
+{{- $ldapCfg := (index $syncConfig "ldap") | default (dict) -}}
+{{- $_ := set $ldapCfg "custom_root_ca" (printf "%s/%s" (trimSuffix "/" (required "ldap.customRootCA.mountPath is not provided" .Values.ldap.customRootCA.mountPath)) (required "ldap.customRootCA.fileName is not provided" .Values.ldap.customRootCA.fileName)) -}}
+{{- $_ := set $syncConfig "ldap" $ldapCfg -}}
+{{- end -}}
+{{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.customRootCA.enabled -}}
+{{- $keycloakCfg := (index $syncConfig "keycloak") | default (dict) -}}
+{{- $_ := set $keycloakCfg "custom_root_ca" (printf "%s/%s" (trimSuffix "/" (required "keycloak.customRootCA.mountPath is not provided" .Values.keycloak.customRootCA.mountPath)) (required "keycloak.customRootCA.fileName is not provided" .Values.keycloak.customRootCA.fileName)) -}}
+{{- $_ := set $syncConfig "keycloak" $keycloakCfg -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,4 +18,4 @@ metadata:
     {{- include "ytsaurus-identity-sync.labels" . | nindent 4 }}
 data:
   config.yaml: |-
-    {{- tpl (required "syncConfig is not provided" .Values.syncConfig) . | nindent 4 }}
+    {{- toYaml $syncConfig | nindent 4 }}

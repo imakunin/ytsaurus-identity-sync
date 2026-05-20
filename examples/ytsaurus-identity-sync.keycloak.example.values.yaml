@@ -34,7 +34,7 @@ syncConfig: |-
     realm: "test_realm"
     client_id: "test_client"
     client_secret_env_var: "KEYCLOAK_CLIENT_SECRET"
-    # Enable when Keycloak TLS cert is signed by custom CA and Secret mount is configured above.
+    # Optional manual override. When keycloak.customRootCA.enabled=true, chart sets this value automatically.
     # custom_root_ca: "{{ .Values.keycloak.customRootCA.mountPath }}/{{ .Values.keycloak.customRootCA.fileName }}"
     users_attribute_filter: "username:test_ email:@acme.com"
     users_group_filter: "^test_.*"

@@ -33,7 +33,7 @@ syncConfig: |-
     address: "localhost:10210"
     bind_dn: "cn=admin,dc=example,dc=org"
     bind_password_env_var: "LDAP_PASSWORD"
-    # Enable when LDAP TLS cert is signed by custom CA and Secret mount is configured above.
+    # Optional manual override. When ldap.customRootCA.enabled=true, chart sets this value automatically.
     # custom_root_ca: "{{ .Values.ldap.customRootCA.mountPath }}/{{ .Values.ldap.customRootCA.fileName }}"
     base_dn: "dc=example,dc=org"
     users:
