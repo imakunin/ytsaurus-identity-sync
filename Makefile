@@ -1,19 +1,18 @@
-.PHONY: lint lint-fix test test-fast format build_images build_helm_chart
+.PHONY: lint lint-fix test test-fast format build build_images build_helm_chart push clean
 
 REGISTRY ?= ghcr.io
 IMAGE_NAME ?= ytsaurus/ytsaurus-identity-sync
 IMAGE_TAG ?= $(shell date -u +%Y-%m-%d)-$(shell git rev-parse --short HEAD)
 IMAGE_REF ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+DOCKER_CONTEXT ?=
+DOCKER_CONTEXT_ARG := $(if $(strip $(DOCKER_CONTEXT)),--context "$(DOCKER_CONTEXT)",)
 
 CHART_PATH ?= ytsaurus-identity-sync-chart
 CHART_NAME ?= ytsaurus-identity-sync-chart
 CHART_REPOSITORY ?= ytsaurus
-CHART_VERSION ?= 0.0.0-$(IMAGE_TAG)
+CHART_VERSION ?= $(IMAGE_TAG)
 CHART_PACKAGE ?= $(CHART_NAME)-$(CHART_VERSION).tgz
 CHART_REGISTRY ?= oci://$(REGISTRY)/$(CHART_REPOSITORY)
-
-# Set PUSH=true to push built artifacts to registries.
-PUSH ?= false
 
 lint:
 	golangci-lint run
@@ -31,9 +30,23 @@ format:
 	go fmt
 
 build_images:
-	docker build --tag "$(IMAGE_REF)" .
-	@if [ "$(PUSH)" = "true" ]; then docker push "$(IMAGE_REF)"; fi
+	docker $(DOCKER_CONTEXT_ARG) build --tag "$(IMAGE_REF)" .
 
-build_helm_chart:
-	helm package "$(CHART_PATH)" --version "$(CHART_VERSION)"
-	@if [ "$(PUSH)" = "true" ]; then helm push "$(CHART_PACKAGE)" "$(CHART_REGISTRY)"; fi
+build_helm_chart: build_images
+	@TMP_CHART_DIR=$$(mktemp -d); \
+	cp -R "$(CHART_PATH)/." "$$TMP_CHART_DIR/"; \
+	sed 's|^[[:space:]]*tag:[[:space:]]*".*"|  tag: "$(IMAGE_TAG)"|' "$$TMP_CHART_DIR/values.yaml" > "$$TMP_CHART_DIR/values.yaml.tmp"; \
+	mv "$$TMP_CHART_DIR/values.yaml.tmp" "$$TMP_CHART_DIR/values.yaml"; \
+	sed -e 's|^version:.*|version: $(CHART_VERSION)|' \
+		-e 's|^appVersion:.*|appVersion: "$(IMAGE_TAG)"|' \
+		"$$TMP_CHART_DIR/Chart.yaml" > "$$TMP_CHART_DIR/Chart.yaml.tmp"; \
+	mv "$$TMP_CHART_DIR/Chart.yaml.tmp" "$$TMP_CHART_DIR/Chart.yaml"; \
+	helm package "$$TMP_CHART_DIR" --destination . --version "$(CHART_VERSION)"; \
+	rm -rf "$$TMP_CHART_DIR"
+
+push: build_images build_helm_chart
+	docker $(DOCKER_CONTEXT_ARG) push "$(IMAGE_REF)"
+	helm push "$(CHART_PACKAGE)" "$(CHART_REGISTRY)"
+
+clean:
+	rm -f "$(CHART_NAME)-"*.tgz
