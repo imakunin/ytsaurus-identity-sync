@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"os"
 	"strings"
 
 	"github.com/Nerzal/gocloak/v14"
@@ -60,24 +58,13 @@ func NewKeycloak(cfg *KeycloakConfig, logger appLoggerType) (*Keycloak, error) {
 }
 
 func configureKeycloakTLSClient(client *gocloak.GoCloak, cfg *KeycloakConfig) error {
-	if cfg.CustomRootCAPath == "" {
+	if cfg.CustomRootCA == "" {
 		return nil
 	}
 
-	customRootCA, err := os.ReadFile(cfg.CustomRootCAPath)
+	rootCAs, err := loadCustomRootCAs(cfg.CustomRootCA, "keycloak")
 	if err != nil {
-		return errors.Wrapf(err, "failed to read keycloak custom root CA from %s", cfg.CustomRootCAPath)
-	}
-
-	rootCAs, err := x509.SystemCertPool()
-	if err != nil {
-		return errors.Wrap(err, "failed to load system certificate pool")
-	}
-	if rootCAs == nil {
-		rootCAs = x509.NewCertPool()
-	}
-	if ok := rootCAs.AppendCertsFromPEM(customRootCA); !ok {
-		return errors.Errorf("failed to parse keycloak custom root CA from %s", cfg.CustomRootCAPath)
+		return err
 	}
 
 	client.RestyClient().SetTLSClientConfig(&tls.Config{RootCAs: rootCAs})

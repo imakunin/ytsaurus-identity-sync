@@ -15,6 +15,7 @@ ldap:
   address: "localhost:10210"
   bind_dn: "cn=admin,dc=example,dc=org"
   bind_password_env_var: "LDAP_PASSWORD"
+  custom_root_ca: "/etc/ytsaurus-identity-sync/ldap-ca/ca.crt" # optional
   base_dn: "dc=example,dc=org"
   users:
     filter: "(&(objectClass=posixAccount)(ou=People))"

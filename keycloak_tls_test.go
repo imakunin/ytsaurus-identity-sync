@@ -20,7 +20,7 @@ func keycloakTestConfig() *KeycloakConfig {
 
 func TestNewKeycloakWithMissingCustomRootCA(t *testing.T) {
 	cfg := keycloakTestConfig()
-	cfg.CustomRootCAPath = "/no/such/custom-ca.pem"
+	cfg.CustomRootCA = "/no/such/custom-ca.pem"
 
 	_, err := NewKeycloak(cfg, getDevelopmentLogger())
 	require.Error(t, err)
@@ -37,7 +37,7 @@ func TestNewKeycloakWithInvalidCustomRootCA(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	cfg := keycloakTestConfig()
-	cfg.CustomRootCAPath = tmpFile.Name()
+	cfg.CustomRootCA = tmpFile.Name()
 
 	_, err = NewKeycloak(cfg, getDevelopmentLogger())
 	require.Error(t, err)

@@ -75,6 +75,14 @@ syncSource: azure
 
 ldap:
   password: "not-here"
+  customRootCA:
+    enabled: false
+    # Existing Secret with CA certificate in PEM format.
+    secretName: ""
+    # Key in the Secret that stores certificate content.
+    secretKey: "ca.crt"
+    mountPath: "/etc/ytsaurus-identity-sync/ldap-ca"
+    fileName: "ca.crt"
 
 azure:
   clientSecret: "not-here"

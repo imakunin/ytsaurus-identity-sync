@@ -77,6 +77,11 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/ytsaurus-identity-sync
+            {{- if and (eq .Values.syncSource "ldap") .Values.ldap.customRootCA.enabled }}
+            - name: ldap-custom-root-ca
+              mountPath: {{ required "ldap.customRootCA.mountPath is not provided" .Values.ldap.customRootCA.mountPath | quote }}
+              readOnly: true
+            {{- end }}
             {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.customRootCA.enabled }}
             - name: keycloak-custom-root-ca
               mountPath: {{ required "keycloak.customRootCA.mountPath is not provided" .Values.keycloak.customRootCA.mountPath | quote }}
@@ -92,6 +97,14 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
+        {{- if and (eq .Values.syncSource "ldap") .Values.ldap.customRootCA.enabled }}
+        - name: ldap-custom-root-ca
+          secret:
+            secretName: {{ required "ldap.customRootCA.secretName is not provided" .Values.ldap.customRootCA.secretName | quote }}
+            items:
+              - key: {{ required "ldap.customRootCA.secretKey is not provided" .Values.ldap.customRootCA.secretKey | quote }}
+                path: {{ required "ldap.customRootCA.fileName is not provided" .Values.ldap.customRootCA.fileName | quote }}
+        {{- end }}
         {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.customRootCA.enabled }}
         - name: keycloak-custom-root-ca
           secret:
