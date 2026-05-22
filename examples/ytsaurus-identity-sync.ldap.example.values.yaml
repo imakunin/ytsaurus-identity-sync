@@ -11,14 +11,11 @@ syncSource: ldap
 ldap:
   # development configuration, use externalSecrets or sealedSecrets for production.
   password: "ldap-password"
-  customRootCA:
-    enabled: false
-    # Existing k8s Secret with CA cert in key `ca.crt`.
-    # secretName: "ldap-root-ca"
-    secretName: ""
-    secretKey: "ca.crt"
-    mountPath: "/etc/ytsaurus-identity-sync/ldap-ca"
-    fileName: "ca.crt"
+  # Optional CA bundle from existing Secret.
+  # caRootBundle:
+  #   kind: Secret
+  #   name: ldap-root-ca
+  #   key: ca.crt
 
 syncConfig: |-
   app:
@@ -33,8 +30,8 @@ syncConfig: |-
     address: "localhost:10210"
     bind_dn: "cn=admin,dc=example,dc=org"
     bind_password_env_var: "LDAP_PASSWORD"
-    # Optional manual override. When ldap.customRootCA.enabled=true, chart sets this value automatically.
-    # custom_root_ca: "{{ .Values.ldap.customRootCA.mountPath }}/{{ .Values.ldap.customRootCA.fileName }}"
+    # Optional manual override. When ldap.caRootBundle is set, chart sets this value automatically.
+    # custom_root_ca: "/etc/ytsaurus-identity-sync/<ldap.caRootBundle.key>"
     base_dn: "dc=example,dc=org"
     users:
       filter: "(&(objectClass=posixAccount)(ou=People))"
