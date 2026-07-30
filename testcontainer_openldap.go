@@ -20,7 +20,7 @@ func NewOpenLdapLocal() *OpenLdapLocal {
 
 func (y *OpenLdapLocal) Start() error {
 	ctx := context.Background()
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
+	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnamilegacy/openldap:2.6.6"))
 	if err != nil {
 		return err
 	}

@@ -193,6 +193,12 @@ func (k *Keycloak) GetUsersByGroups(token string) ([]SourceUser, error) {
 func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*gocloak.Group, error) {
 	ctx := context.Background()
 
+	initialGroups, err := k.getInitialGroups(ctx, token)
+	if err != nil {
+		k.logger.Errorw("failed to get keycloak groups", zap.Error(err), "realm", k.config.Realm, "groups_root_path", k.config.GroupsRootPath)
+		return nil, err
+	}
+
 	var groupsQueue []*gocloak.Group
 	knownGroupIDs := make(map[string]bool)
 	enqueueGroups := func(groupsToAdd []*gocloak.Group) {
@@ -206,25 +212,7 @@ func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*g
 		}
 	}
 
-	first := 0
-	for {
-		k.logger.Debugf("Processing groups from %d ...", first)
-		groupsChunk, err := k.client.GetGroups(ctx, token, k.config.Realm, gocloak.GetGroupsParams{
-			First: gocloak.IntP(first),
-			Max:   gocloak.IntP(defaultKeycloakPageSize),
-		})
-		if err != nil {
-			k.logger.Errorw("failed to get keycloak groups", zap.Error(err), "realm", k.config.Realm)
-			return nil, err
-		}
-
-		enqueueGroups(groupsChunk)
-
-		if len(groupsChunk) < defaultKeycloakPageSize {
-			break
-		}
-		first += defaultKeycloakPageSize
-	}
+	enqueueGroups(initialGroups)
 
 	var groups []*gocloak.Group
 	for len(groupsQueue) > 0 {
@@ -247,6 +235,44 @@ func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*g
 	}
 
 	return k.filterGroups(groups, filter), nil
+}
+
+func (k *Keycloak) getInitialGroups(ctx context.Context, token string) ([]*gocloak.Group, error) {
+	if k.config.GroupsRootPath == "" || k.config.GroupsRootPath == "/" {
+		return k.getTopLevelGroups(ctx, token)
+	}
+
+	rootGroup, err := k.client.GetGroupByPath(ctx, token, k.config.Realm, k.config.GroupsRootPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return k.getChildGroups(rootGroup, token)
+}
+
+func (k *Keycloak) getTopLevelGroups(ctx context.Context, token string) ([]*gocloak.Group, error) {
+	var groups []*gocloak.Group
+	first := 0
+	for {
+		k.logger.Debugf("Processing groups from %d ...", first)
+		groupsChunk, err := k.client.GetGroups(ctx, token, k.config.Realm, gocloak.GetGroupsParams{
+			First: gocloak.IntP(first),
+			Max:   gocloak.IntP(defaultKeycloakPageSize),
+		})
+		if err != nil {
+			k.logger.Errorw("failed to get keycloak groups", zap.Error(err), "realm", k.config.Realm)
+			return nil, err
+		}
+
+		groups = append(groups, groupsChunk...)
+
+		if len(groupsChunk) < defaultKeycloakPageSize {
+			break
+		}
+		first += defaultKeycloakPageSize
+	}
+
+	return groups, nil
 }
 
 func (k *Keycloak) getChildGroups(group *gocloak.Group, token string) ([]*gocloak.Group, error) {

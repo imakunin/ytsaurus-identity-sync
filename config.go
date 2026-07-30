@@ -117,6 +117,8 @@ type KeycloakConfig struct {
 	UsersAttributeFilter string `yaml:"users_attribute_filter"`
 	UsersGroupFilter     string `yaml:"users_group_filter"`
 	GroupsFilter         string `yaml:"groups_filter"`
+	// GroupsRootPath limits group discovery to this Keycloak group subtree. Default: "/".
+	GroupsRootPath string `yaml:"groups_root_path"`
 }
 
 type YtsaurusConfig struct {

@@ -50,7 +50,7 @@ func createYtsaurusUserForKeycloak(name string) YtsaurusUser {
 	originalUsername := fullUsername(name)
 	ytUsername := originalUsername
 	for _, replacement := range defaultUsernameReplacements {
-		ytUsername = strings.Replace(ytUsername, replacement.From, replacement.To, -1)
+		ytUsername = strings.ReplaceAll(ytUsername, replacement.From, replacement.To)
 	}
 	return YtsaurusUser{Username: ytUsername, SourceRaw: map[string]any{
 		"username":   originalUsername,
@@ -71,7 +71,7 @@ func createYtsaurusGroupForKeycloak(name string) YtsaurusGroup {
 	originalName := fullGroupName(name)
 	ytName := originalName
 	for _, replacement := range defaultGroupnameReplacements {
-		ytName = strings.Replace(ytName, replacement.From, replacement.To, -1)
+		ytName = strings.ReplaceAll(ytName, replacement.From, replacement.To)
 	}
 	return YtsaurusGroup{Name: ytName, SourceRaw: map[string]any{
 		"name": originalName,
@@ -527,6 +527,41 @@ var (
 				{
 					YtsaurusGroup: createYtsaurusGroupForKeycloak("defs"),
 					Members:       NewStringSetFromItems(),
+				},
+			},
+		},
+		{
+			name: "groups-root-path",
+			keycloakConfigModifier: func(cfg *KeycloakConfig) {
+				cfg.GroupsRootPath = "/acme.sync-root|all"
+				cfg.UsersGroupFilter = ".*"
+				cfg.GroupsFilter = ".*"
+			},
+			sourceUsersSetUp: []SourceUser{
+				createKeycloakUser("inside"),
+				createKeycloakUser("outside"),
+			},
+			sourceGroupsSetUp: []SourceGroupWithMembers{
+				{
+					SourceGroup: createKeycloakGroup("inside"),
+					Members:     NewStringSetFromItems(fullUsername("inside")),
+				},
+				{
+					SourceGroup: createKeycloakGroup("outside"),
+					Members:     NewStringSetFromItems(fullUsername("outside")),
+				},
+				{
+					SourceGroup: createKeycloakGroup("sync-root"),
+					SubGroups:   NewStringSetFromItems(fullGroupName("inside")),
+				},
+			},
+			ytUsersExpected: []YtsaurusUser{
+				createYtsaurusUserForKeycloak("inside"),
+			},
+			ytGroupsExpected: []YtsaurusGroupWithMembers{
+				{
+					YtsaurusGroup: createYtsaurusGroupForKeycloak("inside"),
+					Members:       NewStringSetFromItems("inside"),
 				},
 			},
 		},

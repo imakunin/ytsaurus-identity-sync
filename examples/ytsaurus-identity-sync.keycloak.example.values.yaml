@@ -36,6 +36,7 @@ syncConfig: |-
     users_attribute_filter: "username:test_ email:@acme.com"
     users_group_filter: "^test_.*"
     groups_filter: "^test_.*"
+    groups_root_path: "/" # optional: limits group discovery to this group subtree
 
   ytsaurus:
     proxy: "{{ .Values.yt.proxy }}"

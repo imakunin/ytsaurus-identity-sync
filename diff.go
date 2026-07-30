@@ -445,7 +445,7 @@ func (a *App) buildUsername(sourceUser SourceUser) string {
 	username := sourceUser.GetName()
 	if a.usernameReplaces != nil {
 		for _, replace := range a.usernameReplaces {
-			username = strings.Replace(username, replace.From, replace.To, -1)
+			username = strings.ReplaceAll(username, replace.From, replace.To)
 		}
 	}
 	username = strings.ToLower(username)
@@ -456,7 +456,7 @@ func (a *App) buildGroupName(sourceGroup SourceGroup) string {
 	name := sourceGroup.GetName()
 	if a.groupnameReplaces != nil {
 		for _, replace := range a.groupnameReplaces {
-			name = strings.Replace(name, replace.From, replace.To, -1)
+			name = strings.ReplaceAll(name, replace.From, replace.To)
 		}
 	}
 	name = strings.ToLower(name)
@@ -562,7 +562,7 @@ func (a *App) isUserChanged(newYtUser YtsaurusUser, ytUser YtsaurusUser) (bool, 
 	if err != nil {
 		return false, UpdatedYtsaurusUser{}, err
 	}
-	if newYtUser.Username == ytUser.Username && bytes.Equal(newSourceRaw, oldSourceRaw) && newYtUser.BannedSince == ytUser.BannedSince {
+	if newYtUser.Username == ytUser.Username && bytes.Equal(newSourceRaw, oldSourceRaw) && newYtUser.BannedSince.Equal(ytUser.BannedSince) {
 		return false, UpdatedYtsaurusUser{}, nil
 	}
 	return true, UpdatedYtsaurusUser{YtsaurusUser: newYtUser, OldUsername: ytUser.Username}, nil

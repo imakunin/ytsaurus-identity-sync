@@ -31,6 +31,9 @@ func unmarshallConfig(content []byte) (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshall config file: %s", content)
 	}
+	if cfg.Keycloak != nil && cfg.Keycloak.GroupsRootPath == "" {
+		cfg.Keycloak.GroupsRootPath = "/"
+	}
 	return cfg, nil
 }
 

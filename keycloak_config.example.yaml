@@ -20,6 +20,7 @@ keycloak:
   users_attribute_filter: "username:test_ email:@acme.com" # attributes search filter https://www.keycloak.org/docs/latest/server_admin/index.html#listing-users
   users_group_filter: "^test_.*" # regexp filter
   groups_filter: "^test_.*" # regexp filter
+  groups_root_path: "/" # optional: limits group discovery to this group subtree
 
 ytsaurus:
   proxy: localhost:10110
