@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"strings"
 
 	"github.com/Nerzal/gocloak/v14"
@@ -33,6 +34,10 @@ type AttributeFilter struct {
 
 func NewKeycloak(cfg *KeycloakConfig, logger appLoggerType) (*Keycloak, error) {
 	client := gocloak.NewClient(cfg.URL)
+	err := configureKeycloakTLSClient(client, cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	usersGroupfilter, err := regexp2.Compile(cfg.UsersGroupFilter, 0)
 	if err != nil {
@@ -50,6 +55,20 @@ func NewKeycloak(cfg *KeycloakConfig, logger appLoggerType) (*Keycloak, error) {
 		groupsFilter:     groupsFilter,
 		logger:           logger,
 	}, nil
+}
+
+func configureKeycloakTLSClient(client *gocloak.GoCloak, cfg *KeycloakConfig) error {
+	if cfg.CustomRootCA == "" {
+		return nil
+	}
+
+	rootCAs, err := loadCustomRootCAs(cfg.CustomRootCA, "keycloak")
+	if err != nil {
+		return err
+	}
+
+	client.RestyClient().SetTLSClientConfig(&tls.Config{RootCAs: rootCAs})
+	return nil
 }
 
 func (k *Keycloak) CreateUserFromRaw(raw map[string]any) (SourceUser, error) {

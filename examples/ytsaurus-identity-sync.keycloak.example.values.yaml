@@ -11,6 +11,11 @@ syncSource: keycloak
 keycloak:
   # development configuration, use externalSecrets or sealedSecrets for production.
   clientSecret: "keycloak-secret-token"
+  # Optional CA bundle from existing Secret.
+  # caRootBundle:
+  #   kind: Secret
+  #   name: keycloak-root-ca
+  #   key: ca.crt
 
 syncConfig: |-
   app:
@@ -26,6 +31,8 @@ syncConfig: |-
     realm: "test_realm"
     client_id: "test_client"
     client_secret_env_var: "KEYCLOAK_CLIENT_SECRET"
+    # Optional manual override. When keycloak.caRootBundle is set, chart sets this value automatically.
+    # custom_root_ca: "/etc/ytsaurus-identity-sync/<keycloak.caRootBundle.key>"
     users_attribute_filter: "username:test_ email:@acme.com"
     users_group_filter: "^test_.*"
     groups_filter: "^test_.*"

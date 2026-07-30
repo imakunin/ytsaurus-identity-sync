@@ -95,19 +95,25 @@ type LdapGroupsConfig struct {
 }
 
 type LdapConfig struct {
-	Address            string           `yaml:"address"`
-	BindDN             string           `yaml:"bind_dn"`
-	BindPasswordEnvVar string           `yaml:"bind_password_env_var"`
-	Users              LdapUsersConfig  `yaml:"users"`
-	Groups             LdapGroupsConfig `yaml:"groups"`
-	BaseDN             string           `yaml:"base_dn"`
+	Address            string `yaml:"address"`
+	BindDN             string `yaml:"bind_dn"`
+	BindPasswordEnvVar string `yaml:"bind_password_env_var"`
+	// CustomRootCA is an optional path to PEM-encoded root CA certificate
+	// used to verify LDAP TLS certificate chain.
+	CustomRootCA string           `yaml:"custom_root_ca,omitempty"`
+	Users        LdapUsersConfig  `yaml:"users"`
+	Groups       LdapGroupsConfig `yaml:"groups"`
+	BaseDN       string           `yaml:"base_dn"`
 }
 
 type KeycloakConfig struct {
-	URL                  string `yaml:"url"`
-	Realm                string `yaml:"realm"`
-	ClientID             string `yaml:"client_id"`
-	ClientSecretEnvVar   string `yaml:"client_secret_env_var"`
+	URL                string `yaml:"url"`
+	Realm              string `yaml:"realm"`
+	ClientID           string `yaml:"client_id"`
+	ClientSecretEnvVar string `yaml:"client_secret_env_var"`
+	// CustomRootCA is an optional path to PEM-encoded root CA certificate
+	// used to verify Keycloak TLS certificate chain.
+	CustomRootCA         string `yaml:"custom_root_ca,omitempty"`
 	UsersAttributeFilter string `yaml:"users_attribute_filter"`
 	UsersGroupFilter     string `yaml:"users_group_filter"`
 	GroupsFilter         string `yaml:"groups_filter"`

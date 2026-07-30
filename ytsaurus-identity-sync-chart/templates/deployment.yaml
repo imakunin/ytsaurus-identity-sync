@@ -77,6 +77,26 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/ytsaurus-identity-sync
+            {{- if and (eq .Values.syncSource "ldap") .Values.ldap.caRootBundle }}
+            {{- if ne (required "ldap.caRootBundle.kind is not provided" .Values.ldap.caRootBundle.kind) "Secret" }}
+            {{- fail "ldap.caRootBundle.kind must be Secret" }}
+            {{- end }}
+            {{- $ldapCAKey := required "ldap.caRootBundle.key is not provided" .Values.ldap.caRootBundle.key }}
+            - name: ldap-ca-root-bundle
+              mountPath: {{ printf "/etc/ytsaurus-identity-sync/%s" $ldapCAKey | quote }}
+              subPath: {{ $ldapCAKey | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.caRootBundle }}
+            {{- if ne (required "keycloak.caRootBundle.kind is not provided" .Values.keycloak.caRootBundle.kind) "Secret" }}
+            {{- fail "keycloak.caRootBundle.kind must be Secret" }}
+            {{- end }}
+            {{- $keycloakCAKey := required "keycloak.caRootBundle.key is not provided" .Values.keycloak.caRootBundle.key }}
+            - name: keycloak-ca-root-bundle
+              mountPath: {{ printf "/etc/ytsaurus-identity-sync/%s" $keycloakCAKey | quote }}
+              subPath: {{ $keycloakCAKey | quote }}
+              readOnly: true
+            {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -87,6 +107,30 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
+        {{- if and (eq .Values.syncSource "ldap") .Values.ldap.caRootBundle }}
+        {{- if ne (required "ldap.caRootBundle.kind is not provided" .Values.ldap.caRootBundle.kind) "Secret" }}
+        {{- fail "ldap.caRootBundle.kind must be Secret" }}
+        {{- end }}
+        {{- $ldapCAKey := required "ldap.caRootBundle.key is not provided" .Values.ldap.caRootBundle.key }}
+        - name: ldap-ca-root-bundle
+          secret:
+            secretName: {{ required "ldap.caRootBundle.name is not provided" .Values.ldap.caRootBundle.name | quote }}
+            items:
+              - key: {{ $ldapCAKey | quote }}
+                path: {{ $ldapCAKey | quote }}
+        {{- end }}
+        {{- if and (eq .Values.syncSource "keycloak") .Values.keycloak.caRootBundle }}
+        {{- if ne (required "keycloak.caRootBundle.kind is not provided" .Values.keycloak.caRootBundle.kind) "Secret" }}
+        {{- fail "keycloak.caRootBundle.kind must be Secret" }}
+        {{- end }}
+        {{- $keycloakCAKey := required "keycloak.caRootBundle.key is not provided" .Values.keycloak.caRootBundle.key }}
+        - name: keycloak-ca-root-bundle
+          secret:
+            secretName: {{ required "keycloak.caRootBundle.name is not provided" .Values.keycloak.caRootBundle.name | quote }}
+            items:
+              - key: {{ $keycloakCAKey | quote }}
+                path: {{ $keycloakCAKey | quote }}
+        {{- end }}
       {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}

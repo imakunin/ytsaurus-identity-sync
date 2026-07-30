@@ -11,6 +11,11 @@ syncSource: ldap
 ldap:
   # development configuration, use externalSecrets or sealedSecrets for production.
   password: "ldap-password"
+  # Optional CA bundle from existing Secret.
+  # caRootBundle:
+  #   kind: Secret
+  #   name: ldap-root-ca
+  #   key: ca.crt
 
 syncConfig: |-
   app:
@@ -25,6 +30,8 @@ syncConfig: |-
     address: "localhost:10210"
     bind_dn: "cn=admin,dc=example,dc=org"
     bind_password_env_var: "LDAP_PASSWORD"
+    # Optional manual override. When ldap.caRootBundle is set, chart sets this value automatically.
+    # custom_root_ca: "/etc/ytsaurus-identity-sync/<ldap.caRootBundle.key>"
     base_dn: "dc=example,dc=org"
     users:
       filter: "(&(objectClass=posixAccount)(ou=People))"

@@ -75,12 +75,20 @@ syncSource: azure
 
 ldap:
   password: "not-here"
+  # caRootBundle:
+  #   kind: Secret
+  #   name: secret-name
+  #   key: ca.crt
 
 azure:
   clientSecret: "not-here"
 
 keycloak:
   clientSecret: "not-here"
+  # caRootBundle:
+  #   kind: Secret
+  #   name: secret-name
+  #   key: ca.crt
 
 # not recommended for production environment
 plainSecrets:

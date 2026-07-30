@@ -76,6 +76,7 @@ func TestLdapConfig(t *testing.T) {
 	require.Equal(t, "cn=admin,dc=example,dc=org", cfg.Ldap.BindDN)
 	require.Equal(t, "localhost:10210", cfg.Ldap.Address)
 	require.Equal(t, "LDAP_PASSWORD", cfg.Ldap.BindPasswordEnvVar)
+	require.Equal(t, "/etc/ytsaurus-identity-sync/ldap-ca/ca.crt", cfg.Ldap.CustomRootCA)
 
 	require.Equal(t, "(&(objectClass=posixAccount)(ou=People))", cfg.Ldap.Users.Filter)
 	require.Equal(t, "cn", cfg.Ldap.Users.UsernameAttributeType)
@@ -125,6 +126,7 @@ func TestKeycloakConfig(t *testing.T) {
 	require.Equal(t, "test", cfg.Keycloak.Realm)
 	require.Equal(t, "test", cfg.Keycloak.ClientID)
 	require.Equal(t, "KEYCLOAK_CLIENT_SECRET", cfg.Keycloak.ClientSecretEnvVar)
+	require.Equal(t, "/etc/ytsaurus-identity-sync/keycloak-ca/ca.crt", cfg.Keycloak.CustomRootCA)
 	require.Equal(t, "username:test_ email:@acme.com", cfg.Keycloak.UsersAttributeFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.UsersGroupFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.GroupsFilter)

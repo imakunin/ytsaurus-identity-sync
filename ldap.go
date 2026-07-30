@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+
 	"github.com/go-ldap/ldap/v3"
 	"k8s.io/utils/env"
 )
@@ -12,7 +14,12 @@ type Ldap struct {
 }
 
 func NewLdap(cfg *LdapConfig, logger appLoggerType) (*Ldap, error) {
-	conn, err := ldap.DialURL(cfg.Address)
+	dialOpts, err := makeLDAPDialOptions(cfg.CustomRootCA)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := ldap.DialURL(cfg.Address, dialOpts...)
 	if err != nil {
 		logger.Fatalf("Failed to connect: %s\n", err)
 		return nil, err
@@ -30,6 +37,21 @@ func NewLdap(cfg *LdapConfig, logger appLoggerType) (*Ldap, error) {
 		connection: conn,
 		config:     cfg,
 		logger:     logger,
+	}, nil
+}
+
+func makeLDAPDialOptions(customRootCAPath string) ([]ldap.DialOpt, error) {
+	if customRootCAPath == "" {
+		return nil, nil
+	}
+
+	rootCAs, err := loadCustomRootCAs(customRootCAPath, "ldap")
+	if err != nil {
+		return nil, err
+	}
+
+	return []ldap.DialOpt{
+		ldap.DialWithTLSConfig(&tls.Config{RootCAs: rootCAs}),
 	}, nil
 }
 
