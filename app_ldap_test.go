@@ -32,7 +32,7 @@ func createYtsaurusUser(name string) YtsaurusUser {
 	originalUsername := fmt.Sprintf("%s@acme.com", name)
 	ytUsername := originalUsername
 	for _, replacement := range defaultUsernameReplacements {
-		ytUsername = strings.Replace(ytUsername, replacement.From, replacement.To, -1)
+		ytUsername = strings.ReplaceAll(ytUsername, replacement.From, replacement.To)
 	}
 
 	return YtsaurusUser{Username: ytUsername, SourceRaw: map[string]any{
@@ -64,7 +64,7 @@ func createYtsaurusGroup(name string) YtsaurusGroup {
 	originalName := fmt.Sprintf("%v|all", name)
 	ytName := originalName
 	for _, replacement := range defaultGroupnameReplacements {
-		ytName = strings.Replace(ytName, replacement.From, replacement.To, -1)
+		ytName = strings.ReplaceAll(ytName, replacement.From, replacement.To)
 	}
 	return YtsaurusGroup{Name: name, SourceRaw: map[string]any{
 		"groupname": originalName,
