@@ -130,6 +130,7 @@ func TestKeycloakConfig(t *testing.T) {
 	require.Equal(t, "username:test_ email:@acme.com", cfg.Keycloak.UsersAttributeFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.UsersGroupFilter)
 	require.Equal(t, "^test_.*", cfg.Keycloak.GroupsFilter)
+	require.Equal(t, "/", cfg.Keycloak.GroupsRootPath)
 
 	require.Equal(t, "localhost:10110", cfg.Ytsaurus.Proxy)
 	require.Equal(t, true, cfg.Ytsaurus.ApplyUserChanges)
@@ -144,4 +145,10 @@ func TestKeycloakConfig(t *testing.T) {
 	logger, err := configureLogger(&cfg.Logging)
 	require.NoError(t, err)
 	logger.Debugw("test logging message", "key", "val")
+}
+
+func TestKeycloakGroupsRootPathDefault(t *testing.T) {
+	cfg, err := unmarshallConfig([]byte("keycloak:\n  url: http://localhost:8080\n"))
+	require.NoError(t, err)
+	require.Equal(t, "/", cfg.Keycloak.GroupsRootPath)
 }

@@ -531,6 +531,41 @@ var (
 			},
 		},
 		{
+			name: "groups-root-path",
+			keycloakConfigModifier: func(cfg *KeycloakConfig) {
+				cfg.GroupsRootPath = "/acme.sync-root|all"
+				cfg.UsersGroupFilter = ".*"
+				cfg.GroupsFilter = ".*"
+			},
+			sourceUsersSetUp: []SourceUser{
+				createKeycloakUser("inside"),
+				createKeycloakUser("outside"),
+			},
+			sourceGroupsSetUp: []SourceGroupWithMembers{
+				{
+					SourceGroup: createKeycloakGroup("inside"),
+					Members:     NewStringSetFromItems(fullUsername("inside")),
+				},
+				{
+					SourceGroup: createKeycloakGroup("outside"),
+					Members:     NewStringSetFromItems(fullUsername("outside")),
+				},
+				{
+					SourceGroup: createKeycloakGroup("sync-root"),
+					SubGroups:   NewStringSetFromItems(fullGroupName("inside")),
+				},
+			},
+			ytUsersExpected: []YtsaurusUser{
+				createYtsaurusUserForKeycloak("inside"),
+			},
+			ytGroupsExpected: []YtsaurusGroupWithMembers{
+				{
+					YtsaurusGroup: createYtsaurusGroupForKeycloak("inside"),
+					Members:       NewStringSetFromItems("inside"),
+				},
+			},
+		},
+		{
 			name:              "create-with-paging",
 			sourceUsersSetUp:  generateSourceUsers(210),
 			sourceGroupsSetUp: generateEmptySourceGroups(210),
