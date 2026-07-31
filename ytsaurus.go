@@ -112,10 +112,10 @@ func (y *Ytsaurus) CreateUser(user YtsaurusUser) error {
 	}
 
 	if y.dryRunUsers {
-		y.logger.Debugw("[DRY-RUN] Going to create user", "user", user)
+		y.logger.Debugw("[DRY-RUN] Going to create user", ytsaurusUserLogFields(user)...)
 		return nil
 	}
-	y.logger.Debugw("Going to create user", "user", user)
+	y.logger.Debugw("Going to create user", ytsaurusUserLogFields(user)...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), y.timeout)
 	defer cancel()
@@ -139,12 +139,12 @@ func (y *Ytsaurus) UpdateUser(username string, user YtsaurusUser) error {
 		return err
 	}
 
-	logger := y.logger.With("username", username, "user", user)
+	logFields := append([]any{"old_user_username", username}, ytsaurusUserLogFields(user)...)
 	if y.dryRunUsers {
-		logger.Debugw("[DRY-RUN] Going to update user")
+		y.logger.Debugw("[DRY-RUN] Going to update user", logFields...)
 		return nil
 	}
-	logger.Debugw("Going to update user")
+	y.logger.Debugw("Going to update user", logFields...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), y.timeout)
 	defer cancel()
@@ -236,10 +236,10 @@ func (y *Ytsaurus) CreateGroup(group YtsaurusGroup) error {
 	}
 
 	if y.dryRunGroups {
-		y.logger.Debugw("[DRY-RUN] Going to create group", "name", group.Name)
+		y.logger.Debugw("[DRY-RUN] Going to create group", ytsaurusGroupLogFields(group)...)
 		return nil
 	}
-	y.logger.Debugw("Going to create group", "name", group.Name)
+	y.logger.Debugw("Going to create group", ytsaurusGroupLogFields(group)...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), y.timeout)
 	defer cancel()
@@ -261,12 +261,12 @@ func (y *Ytsaurus) UpdateGroup(groupname string, group YtsaurusGroup) error {
 	if err := y.ensureGroupManaged(groupname); err != nil {
 		return err
 	}
-	logger := y.logger.With("groupname", groupname, "group", group)
+	logFields := append([]any{"old_group_name", groupname}, ytsaurusGroupLogFields(group)...)
 	if y.dryRunGroups {
-		logger.Debugw("[DRY-RUN] Going to update group")
+		y.logger.Debugw("[DRY-RUN] Going to update group", logFields...)
 		return nil
 	}
-	logger.Debugw("Going to update group")
+	y.logger.Debugw("Going to update group", logFields...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), y.timeout)
 	defer cancel()

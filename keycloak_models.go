@@ -49,6 +49,7 @@ func (ku KeycloakUser) GetRaw() (map[string]any, error) {
 type KeycloakGroup struct {
 	Name string `yson:"name"`
 	ID   string `yson:"id"`
+	Path string `yson:"path"`
 }
 
 func NewKeycloakGroup(attributes map[string]any) (*KeycloakGroup, error) {

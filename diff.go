@@ -96,6 +96,7 @@ func (a *App) syncUsers() (map[ObjectID]YtsaurusUser, error) {
 		}
 	}
 	for _, user := range diff.create {
+		a.logger.Debugw("Going to create user", ytsaurusUserLogFields(user)...)
 		err = a.ytsaurus.CreateUser(user)
 		if err != nil {
 			createErrCount++
@@ -139,6 +140,7 @@ func (a *App) syncGroups() (map[ObjectID]YtsaurusGroupWithMembers, error) {
 
 	var createErrCount, updateErrCount, removeErrCount int
 	for _, group := range diff.groupsToRemove {
+		a.logger.Debugw("Going to remove group", ytsaurusGroupLogFields(group.YtsaurusGroup)...)
 		err = a.ytsaurus.RemoveGroup(group.Name)
 		if err != nil {
 			removeErrCount++
@@ -146,6 +148,7 @@ func (a *App) syncGroups() (map[ObjectID]YtsaurusGroupWithMembers, error) {
 		}
 	}
 	for _, group := range diff.groupsToCreate {
+		a.logger.Debugw("Going to create group", ytsaurusGroupLogFields(group.YtsaurusGroup)...)
 		err = a.ytsaurus.CreateGroup(group.YtsaurusGroup)
 		if err != nil {
 			createErrCount++
@@ -168,6 +171,24 @@ func (a *App) syncGroups() (map[ObjectID]YtsaurusGroupWithMembers, error) {
 		"remove_errors", removeErrCount,
 	)
 	return diff.groupsResult, nil
+}
+
+func ytsaurusUserLogFields(user YtsaurusUser) []any {
+	return []any{
+		"user_username", user.Username,
+		"source_user_id", user.SourceRaw["id"],
+	}
+}
+
+func ytsaurusGroupLogFields(group YtsaurusGroup) []any {
+	fields := []any{
+		"group_name", group.Name,
+		"source_group_id", group.SourceRaw["id"],
+	}
+	if groupPath, ok := group.SourceRaw["path"].(string); ok && groupPath != "" {
+		fields = append(fields, "group_path", groupPath)
+	}
+	return fields
 }
 
 func (a *App) syncGroupMembers(usersMap map[ObjectID]YtsaurusUser, groupsMap map[ObjectID]YtsaurusGroupWithMembers) error {
@@ -623,14 +644,17 @@ func (a *App) isGroupMembersChanged(
 func (a *App) banOrRemoveUser(user YtsaurusUser) (wasBanned, wasRemoved bool, err error) {
 	// Ban settings is disabled.
 	if a.banDuration == 0 {
+		a.logger.Debugw("Going to remove user", ytsaurusUserLogFields(user)...)
 		return false, true, a.ytsaurus.RemoveUser(user.Username)
 	}
 	// If user is not already banned we should do it.
 	if !user.IsBanned() {
+		a.logger.Debugw("Going to ban user", ytsaurusUserLogFields(user)...)
 		return true, false, a.ytsaurus.BanUser(user.Username)
 	}
 	// If user was banned longer than setting permits, we remove it.
 	if user.IsBanned() && time.Since(user.BannedSince) > a.banDuration {
+		a.logger.Debugw("Going to remove user", ytsaurusUserLogFields(user)...)
 		return false, true, a.ytsaurus.RemoveUser(user.Username)
 	}
 	a.logger.Debugw("user is banned, but not yet removed", "user", user.Username, "since", user.BannedSince)

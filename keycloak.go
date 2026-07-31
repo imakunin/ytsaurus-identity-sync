@@ -175,6 +175,7 @@ func (k *Keycloak) GetUsersByGroups(token string) ([]SourceUser, error) {
 		}
 
 		members = k.filterUsersByAttributes(members, k.config.UsersAttributeFilter)
+		k.logGroupUsers(g, members)
 		convertedMembers := k.convertToSourceUsers(members)
 
 		for _, m := range convertedMembers {
@@ -195,10 +196,9 @@ func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*g
 
 	initialGroups, err := k.getInitialGroups(ctx, token)
 	if err != nil {
-		k.logger.Errorw("failed to get keycloak groups", zap.Error(err), "realm", k.config.Realm, "groups_root_path", k.config.GroupsRootPath)
+		k.logger.Errorf("failed to get keycloak groups (groups_root_path: %q): %s", k.config.GroupsRootPath, err)
 		return nil, err
 	}
-
 	var groupsQueue []*gocloak.Group
 	knownGroupIDs := make(map[string]bool)
 	enqueueGroups := func(groupsToAdd []*gocloak.Group) {
@@ -221,7 +221,14 @@ func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*g
 
 		childGroups, err := k.getChildGroups(group, token)
 		if err != nil {
-			k.logger.Errorw("failed to get child groups", zap.Error(err), "realm", k.config.Realm, "group_name", gocloak.PString(group.Name), "group_id", gocloak.PString(group.ID))
+			k.logger.Errorw(
+				"failed to get child groups",
+				zap.Error(err),
+				"realm", k.config.Realm,
+				"group_name", gocloak.PString(group.Name),
+				"group_id", gocloak.PString(group.ID),
+				"group_path", gocloak.PString(group.Path),
+			)
 			return nil, err
 		}
 
@@ -234,7 +241,12 @@ func (k *Keycloak) getGroupsByRegexp(token string, filter *regexp2.Regexp) ([]*g
 		enqueueGroups(childGroups)
 	}
 
-	return k.filterGroups(groups, filter), nil
+	k.logGroups(groups, "Read keycloak groups")
+
+	filteredGroups := k.filterGroups(groups, filter)
+	k.logGroups(filteredGroups, "Filtered keycloak groups")
+
+	return filteredGroups, nil
 }
 
 func (k *Keycloak) getInitialGroups(ctx context.Context, token string) ([]*gocloak.Group, error) {
@@ -248,6 +260,38 @@ func (k *Keycloak) getInitialGroups(ctx context.Context, token string) ([]*goclo
 	}
 
 	return k.getChildGroups(rootGroup, token)
+}
+
+func (k *Keycloak) logGroups(groups []*gocloak.Group, message string) {
+	k.logger.Debugw(message, "group_count", len(groups))
+	for _, group := range groups {
+		k.logger.Debugw(
+			message,
+			"group_path", gocloak.PString(group.Path),
+			"group_name", gocloak.PString(group.Name),
+			"group_id", gocloak.PString(group.ID),
+		)
+	}
+}
+
+func (k *Keycloak) logGroupUsers(group *gocloak.Group, users []*gocloak.User) {
+	k.logger.Debugw(
+		"Filtered keycloak group users",
+		"group_path", gocloak.PString(group.Path),
+		"group_name", gocloak.PString(group.Name),
+		"group_id", gocloak.PString(group.ID),
+		"user_count", len(users),
+	)
+	for _, user := range users {
+		k.logger.Debugw(
+			"Filtered keycloak group user",
+			"group_path", gocloak.PString(group.Path),
+			"group_name", gocloak.PString(group.Name),
+			"group_id", gocloak.PString(group.ID),
+			"user_username", gocloak.PString(user.Username),
+			"user_id", gocloak.PString(user.ID),
+		)
+	}
 }
 
 func (k *Keycloak) getTopLevelGroups(ctx context.Context, token string) ([]*gocloak.Group, error) {
@@ -281,7 +325,13 @@ func (k *Keycloak) getChildGroups(group *gocloak.Group, token string) ([]*gocloa
 	var childGroups []*gocloak.Group
 	first := 0
 	for {
-		k.logger.Debugf("Processing group {%s %s} child groups from %d ...", gocloak.PString(group.Name), gocloak.PString(group.ID), first)
+		k.logger.Debugw(
+			"Processing group child groups",
+			"group_path", gocloak.PString(group.Path),
+			"group_name", gocloak.PString(group.Name),
+			"group_id", gocloak.PString(group.ID),
+			"first", first,
+		)
 		childGroupsChunk, err := k.client.GetChildGroups(ctx, token, k.config.Realm, gocloak.PString(group.ID), gocloak.GetChildGroupsParams{
 			First: gocloak.IntP(first),
 			Max:   gocloak.IntP(defaultKeycloakPageSize),
@@ -329,7 +379,13 @@ func (k *Keycloak) getGroupMembers(token string, group *gocloak.Group) ([]*goclo
 	first := 0
 
 	for {
-		k.logger.Debugf("Processing group {%s %s} members from %d ...", gocloak.PString(group.Name), gocloak.PString(group.ID), first)
+		k.logger.Debugw(
+			"Processing group members",
+			"group_path", gocloak.PString(group.Path),
+			"group_name", gocloak.PString(group.Name),
+			"group_id", gocloak.PString(group.ID),
+			"first", first,
+		)
 		membersChunk, err := k.client.GetGroupMembers(ctx, token, k.config.Realm, *group.ID, gocloak.GetGroupsParams{
 			First: gocloak.IntP(first),
 			Max:   gocloak.IntP(defaultKeycloakPageSize),
@@ -350,7 +406,13 @@ func (k *Keycloak) getGroupMembers(token string, group *gocloak.Group) ([]*goclo
 		first += defaultKeycloakPageSize
 	}
 
-	k.logger.Debugf("Found %d group %s members", len(members), gocloak.PString(group.Name))
+	k.logger.Debugw(
+		"Found group members",
+		"group_path", gocloak.PString(group.Path),
+		"group_name", gocloak.PString(group.Name),
+		"group_id", gocloak.PString(group.ID),
+		"member_count", len(members),
+	)
 
 	return members, nil
 }
@@ -375,7 +437,13 @@ func (k *Keycloak) convertToSourceGroups(token string, groups []*gocloak.Group) 
 	for _, g := range groups {
 		memberIDs, err := k.getGroupMemberIDs(token, g)
 		if err != nil {
-			k.logger.Errorw("failed to get group members", zap.Error(err), "group_name", gocloak.PString(g.Name))
+			k.logger.Errorw(
+				"failed to get group members",
+				zap.Error(err),
+				"group_path", gocloak.PString(g.Path),
+				"group_name", gocloak.PString(g.Name),
+				"group_id", gocloak.PString(g.ID),
+			)
 			return nil, err
 		}
 
@@ -390,6 +458,7 @@ func (k *Keycloak) convertToSourceGroups(token string, groups []*gocloak.Group) 
 			SourceGroup: KeycloakGroup{
 				Name: gocloak.PString(g.Name),
 				ID:   gocloak.PString(g.ID),
+				Path: gocloak.PString(g.Path),
 			},
 			Members:   memberIDs,
 			SubGroups: subGroupIDs,
